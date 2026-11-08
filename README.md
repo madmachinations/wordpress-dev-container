@@ -2,6 +2,8 @@
 
 A reusable local WordPress environment with PHP 8.3, Apache, WP-CLI 2.12.0, Node.js 22, npm, and MariaDB client tools. Mount an existing **single-site** WordPress installation at `/app`; the image supplies the runtime, not WordPress core or a database dump.
 
+The runtime uses the official `wordpress:php8.3-apache` base so its WordPress PHP extensions are already compiled. Our entrypoint uses only the site mounted at `/app`; it does not install or copy the base image's bundled WordPress files. GitHub Actions caches build layers between runs.
+
 Published image: `ghcr.io/madmachinations/wordpress-dev-container:latest` (Linux AMD64 and ARM64, including Apple Silicon).
 
 ## Quick start

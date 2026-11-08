@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 FROM node:22.23.4-bookworm-slim AS node
-FROM php:8.3-apache-bookworm
+# Reuse WordPress's prebuilt PHP extensions instead of compiling them here
+# (especially expensive for ARM64 under QEMU). Our entrypoint still serves /app.
+FROM wordpress:php8.3-apache
 
 ARG WP_CLI_VERSION=2.12.0
 LABEL org.opencontainers.image.source="https://github.com/madmachinations/wordpress-dev-container" \
@@ -9,10 +11,6 @@ LABEL org.opencontainers.image.source="https://github.com/madmachinations/wordpr
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl git unzip mariadb-client \
-        libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev \
-        libzip-dev libicu-dev libonig-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
-    && docker-php-ext-install -j"$(nproc)" mysqli pdo_mysql gd zip intl mbstring exif opcache \
     && a2enmod rewrite headers expires \
     && curl -fsSL "https://github.com/wp-cli/wp-cli/releases/download/v${WP_CLI_VERSION}/wp-cli-${WP_CLI_VERSION}.phar" -o /usr/local/lib/wp-cli.phar \
     && curl -fsSL "https://github.com/wp-cli/wp-cli/releases/download/v${WP_CLI_VERSION}/wp-cli-${WP_CLI_VERSION}.phar.sha512" -o /tmp/wp-cli.sha512 \
@@ -25,7 +23,7 @@ COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
-COPY docker/php.ini /usr/local/etc/php/conf.d/development.ini
+COPY docker/php.ini /usr/local/etc/php/conf.d/zz-development.ini
 COPY scripts/ /usr/local/lib/wordpress-dev/
 COPY templates/ /usr/local/share/wordpress-dev/
 RUN chmod +x /usr/local/lib/wordpress-dev/entrypoint /usr/local/lib/wordpress-dev/wp \
