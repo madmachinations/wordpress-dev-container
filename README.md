@@ -69,7 +69,7 @@ docker compose up -d
 docker compose logs -f wordpress
 ```
 
-With `ACTIVE_THEME=my-theme`, visit [http://wordpress.my-theme.orb.local](http://wordpress.my-theme.orb.local). For an empty database, complete the WordPress installer or import the site's SQL dump:
+With `ACTIVE_THEME=my-theme`, visit [https://wordpress.my-theme.orb.local](https://wordpress.my-theme.orb.local). For an empty database, complete the WordPress installer or import the site's SQL dump:
 
 ```sh
 docker compose exec -T wordpress wp db import - < site-backup.sql
@@ -85,7 +85,7 @@ docker compose down             # Remove containers/network; preserve database v
 docker compose down -v          # Also DELETE the database volume
 ```
 
-The Compose project name is the theme name, and OrbStack exposes the `wordpress` service at `http://wordpress.<theme-name>.orb.local`. Each site uses a unique theme name, so multiple sites can run together without port conflicts. Leave the Compose project name unchanged (do not override it with `-p` or `COMPOSE_PROJECT_NAME`) so it matches the derived domain. Neither service publishes host ports. This template targets local development with OrbStack.
+The Compose project name is the theme name, and OrbStack exposes the `wordpress` service at `https://wordpress.<theme-name>.orb.local`. Each site uses a unique theme name, so multiple sites can run together without port conflicts. Leave the Compose project name unchanged (do not override it with `-p` or `COMPOSE_PROJECT_NAME`) so it matches the derived domain. Neither service publishes host ports. This template targets local development with OrbStack.
 
 ## Configuration
 
@@ -98,10 +98,10 @@ The Compose project name is the theme name, and OrbStack exposes the `wordpress`
 | `DB_NAME` | Database name |
 | `PRODUCTION_DOMAIN` | Production origin, e.g. `https://www.example.com` |
 | `STAGING_DOMAIN` | Staging/sandbox origin, e.g. `https://staging.example.com` |
-| `LOCAL_DOMAIN` | Automatically supplied by Compose as `http://wordpress.${ACTIVE_THEME}.orb.local`; no `.env` entry needed |
+| `LOCAL_DOMAIN` | Automatically supplied by Compose as `https://wordpress.${ACTIVE_THEME}.orb.local`; no `.env` entry needed |
 | `ACTIVE_THEME` | Theme directory slug, e.g. `my-theme`; also sets the Compose project name and OrbStack domain |
 
-All variables except `DB_PORT` are required by the container at Apache startup; Compose supplies `LOCAL_DOMAIN` automatically. Set `ACTIVE_THEME` to a lowercase theme directory slug suitable for a Compose project name and hostname, such as `my-theme`. Domains accept HTTP(S) origins with optional ports and a trailing slash, but no path, credentials, query, or fragment. Bare production/staging hostnames default to HTTPS; bare local hostnames default to HTTP. Each environment must have a distinct host/port combination. TLS is not provided inside the container; use an external local reverse proxy for HTTPS locally.
+All variables except `DB_PORT` are required by the container at Apache startup; Compose supplies `LOCAL_DOMAIN` automatically. Set `ACTIVE_THEME` to a lowercase theme directory slug suitable for a Compose project name and hostname, such as `my-theme`. Domains accept HTTP(S) origins with optional ports and a trailing slash, but no path, credentials, query, or fragment. Bare production/staging hostnames default to HTTPS; bare local hostnames default to HTTP. Each environment must have a distinct host/port combination. OrbStack provides HTTPS; Apache recognizes its forwarded HTTPS header so WordPress generates secure asset URLs.
 
 Adapt the site's existing `wp-config.php`, preserving its custom settings. A minimal example:
 
@@ -246,6 +246,6 @@ After the first publish, check package settings and make the GHCR package public
 
 - **Startup exits:** inspect `docker compose logs wordpress`; check the mount, `wp-config.php`, required variables, and table prefix. Repair or replace a partial/non-WordPress database before startup.
 - **Database timeout:** inspect `docker compose logs db`; existing MariaDB volumes retain original users/passwords even when `.env` changes. Update database credentials or deliberately recreate the disposable volume.
-- **Wrong redirects:** rerun `/migrate-to-local`, check `WP_HOME`/`WP_SITEURL`, `.htaccess`, caches, and plugin redirects. Use `http://wordpress.<theme-name>.orb.local` with OrbStack running, and keep the Compose project name equal to `ACTIVE_THEME`.
+- **Wrong redirects:** rerun `/migrate-to-local`, check `WP_HOME`/`WP_SITEURL`, `.htaccess`, caches, and plugin redirects. Use `https://wordpress.<theme-name>.orb.local` with OrbStack running, and keep the Compose project name equal to `ACTIVE_THEME`.
 - **Write failures:** grant the relevant user access to the specific theme/uploads/cache directory. No global ownership rewrite happens on startup.
 - **No image yet:** the GHCR tag exists after publishing succeeds on `main`; use a local build meanwhile.

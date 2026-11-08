@@ -18,6 +18,9 @@ printf '<?php // Existing theme functions.\n' > "$directory/site/wp-content/them
 cp tests/wp-config.php "$directory/site/wp-config.php"
 cp tests/seed.php tests/assert-migration.php "$directory/site/"
 printf '<?php echo "php-" . PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;\n' > "$directory/site/runtime-check.php"
+printf '<?php echo !empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off" ? "https" : "http";\n' > "$directory/site/runtime-proxy.php"
+printf '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"/>\n' > "$directory/site/runtime-check.svg"
+printf '<?php include __DIR__ . "/runtime-check.svg";\n' > "$directory/site/runtime-svg.php"
 cat > "$directory/environment" <<'ENV'
 DB_HOST=db
 DB_PORT=3306
@@ -45,6 +48,8 @@ start_web() {
     for attempt in $(seq 1 90); do
         if docker exec "$name-web" curl -fsS -o /dev/null http://localhost/wp-includes/css/dashicons.min.css 2>/dev/null; then
             test "$(docker exec "$name-web" curl -fsS http://localhost/runtime-check.php)" = php-8.3
+            test "$(docker exec "$name-web" curl -fsS -H 'X-Forwarded-Proto: https' http://localhost/runtime-proxy.php)" = https
+            test "$(docker exec "$name-web" curl -fsS http://localhost/runtime-svg.php)" = '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"/>'
             test "$(docker exec "$name-web" curl -s -o /dev/null -w '%{http_code}' http://localhost/wp-config.php)" = 403
             return
         fi
