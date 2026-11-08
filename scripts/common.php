@@ -73,18 +73,8 @@ function requireSingleSite(): void {
 if (is_multisite()) {
     WP_CLI::error('Multisite is not supported.');
 }
-foreach (['DB_NAME' => 'DB_NAME', 'DB_USER' => 'DB_USER', 'DB_PASSWORD' => 'DB_PASS'] as $constant => $variable) {
-    if (constant($constant) !== getenv($variable)) {
-        WP_CLI::error('wp-config.php database settings do not match DB_* environment variables.');
-    }
-}
-$host = getenv('DB_HOST');
-$port = getenv('DB_PORT');
-if (DB_HOST !== $host . ':' . $port && !($port === '3306' && DB_HOST === $host)) {
-    WP_CLI::error('wp-config.php DB_HOST does not match the configured DB_HOST and DB_PORT.');
-}
 PHP;
     if (wp(['eval', $check]) !== 0) {
-        fail('Unable to load a single-site WordPress installation with the configured database settings.');
+        fail('Unable to load a single-site WordPress installation.');
     }
 }

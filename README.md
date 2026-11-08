@@ -25,7 +25,7 @@ services:
       DB_NAME: wordpress
       PRODUCTION_DOMAIN: ${PRODUCTION_DOMAIN:-https://www.example.com}
       STAGING_DOMAIN: ${STAGING_DOMAIN:-https://staging.example.com}
-      LOCAL_DOMAIN: http://wordpress.${ACTIVE_THEME}.orb.local
+      LOCAL_DOMAIN: https://wordpress.${ACTIVE_THEME}.orb.local
       ACTIVE_THEME: ${ACTIVE_THEME}
     volumes:
       - ./site:/app
@@ -101,7 +101,7 @@ The Compose project name is the theme name, and OrbStack exposes the `wordpress`
 | `LOCAL_DOMAIN` | Automatically supplied by Compose as `http://wordpress.${ACTIVE_THEME}.orb.local`; no `.env` entry needed |
 | `ACTIVE_THEME` | Theme directory slug, e.g. `my-theme`; also sets the Compose project name and OrbStack domain |
 
-All variables except `DB_PORT` are required by the container at Apache startup; Compose supplies `LOCAL_DOMAIN` automatically. Set `ACTIVE_THEME` to a lowercase theme directory slug suitable for a Compose project name and hostname, such as `my-theme`. Domains accept HTTP(S) origins with optional ports and a trailing slash, but no path, credentials, query, or fragment. Bare production/staging hostnames default to HTTPS; bare local hostnames default to HTTP. Each environment must have a distinct host/port combination. TLS is not provided inside the container; use an external local reverse proxy for HTTPS locally. Before migration, helpers check that the database settings loaded from `wp-config.php` match the environment.
+All variables except `DB_PORT` are required by the container at Apache startup; Compose supplies `LOCAL_DOMAIN` automatically. Set `ACTIVE_THEME` to a lowercase theme directory slug suitable for a Compose project name and hostname, such as `my-theme`. Domains accept HTTP(S) origins with optional ports and a trailing slash, but no path, credentials, query, or fragment. Bare production/staging hostnames default to HTTPS; bare local hostnames default to HTTP. Each environment must have a distinct host/port combination. TLS is not provided inside the container; use an external local reverse proxy for HTTPS locally.
 
 Adapt the site's existing `wp-config.php`, preserving its custom settings. A minimal example:
 

@@ -10,7 +10,7 @@ services:
       DB_NAME: wordpress
       PRODUCTION_DOMAIN: ${PRODUCTION_DOMAIN:-https://www.example.com}
       STAGING_DOMAIN: ${STAGING_DOMAIN:-https://staging.example.com}
-      LOCAL_DOMAIN: http://wordpress.${ACTIVE_THEME}.orb.local
+      LOCAL_DOMAIN: https://wordpress.${ACTIVE_THEME}.orb.local
       ACTIVE_THEME: ${ACTIVE_THEME}
     volumes:
       - ./site:/app
