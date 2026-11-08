@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+# One-off commands (including imports and exports) must not trigger normalization.
+if [ "${1:-}" = apache2-foreground ]; then
+    php /usr/local/lib/wordpress-dev/startup.php
+fi
+exec "$@"

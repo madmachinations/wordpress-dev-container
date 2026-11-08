@@ -1,0 +1,17 @@
+{
+  "name": "__NAMESPACE__-__SLUG__",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "wp-scripts build --webpack-copy-php",
+    "start": "wp-scripts start --webpack-copy-php"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "37.1.0"
+  },
+  "dependencies": {
+    "@wordpress/block-editor": "20.0.0",
+    "@wordpress/blocks": "17.1.0",
+    "@wordpress/i18n": "7.1.0"
+  }
+}

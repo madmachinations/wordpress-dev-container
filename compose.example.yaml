@@ -1,0 +1,38 @@
+name: ${COMPOSE_PROJECT_NAME:-wordpress-dev}
+services:
+  wordpress:
+    image: ghcr.io/madmachinations/wordpress-dev-container:latest
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-8080}:80"
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_USER: wordpress
+      DB_PASS: ${DB_PASSWORD:-local-wordpress-password}
+      DB_NAME: wordpress
+      PRODUCTION_DOMAIN: ${PRODUCTION_DOMAIN:-https://www.example.com}
+      STAGING_DOMAIN: ${STAGING_DOMAIN:-https://staging.example.com}
+      LOCAL_DOMAIN: ${LOCAL_DOMAIN:-http://wordpress.test:8080}
+      ACTIVE_THEME: ${ACTIVE_THEME:-my-theme}
+    volumes:
+      - ./site:/app
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: ${DB_PASSWORD:-local-wordpress-password}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-local-root-password}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+volumes:
+  db-data:

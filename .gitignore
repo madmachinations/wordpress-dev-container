@@ -1,0 +1,4 @@
+.env
+site/
+node_modules/
+*.sql

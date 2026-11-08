@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "__NAMESPACE__/__SLUG__",
+  "version": "1.0.0",
+  "title": "__TITLE__",
+  "category": "widgets",
+  "icon": "layout",
+  "description": "A custom server-rendered theme block.",
+  "textdomain": "__NAMESPACE__",
+  "attributes": {
+    "content": { "type": "string", "default": "Hello from __TITLE__" }
+  },
+  "supports": { "html": false },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

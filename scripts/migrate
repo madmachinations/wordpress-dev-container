@@ -1,0 +1,36 @@
+#!/usr/bin/env php
+<?php
+require __DIR__ . '/common.php';
+validateDatabase();
+$urls = domains();
+$dryRun = false;
+foreach (array_slice($argv, 1) as $argument) {
+    if ($argument !== '--dry-run') {
+        fail('Usage: /migrate-to-{local,staging,production} [--dry-run]');
+    }
+    $dryRun = true;
+}
+$target = match (basename($argv[0])) {
+    'migrate-to-local' => 'LOCAL_DOMAIN',
+    'migrate-to-staging' => 'STAGING_DOMAIN',
+    'migrate-to-production' => 'PRODUCTION_DOMAIN',
+    default => fail('Invoke this helper using /migrate-to-local, /migrate-to-staging, or /migrate-to-production.'),
+};
+$sources = $target === 'LOCAL_DOMAIN' ? ['PRODUCTION_DOMAIN', 'STAGING_DOMAIN'] : ['LOCAL_DOMAIN'];
+requireSingleSite();
+foreach ($sources as $source) {
+    $authority = preg_replace('~^https?://~', '', $urls[$source]);
+    // Match complete URL authorities only, never email addresses, longer hostnames, or other ports.
+    $pattern = 'https?://' . preg_quote($authority, '~') . '(?=[/\x3f\x23\s\x22\x27<>]|$)';
+    $args = ['search-replace', $pattern, $urls[$target], '--regex', '--regex-delimiter=~',
+        '--regex-flags=i', '--all-tables-with-prefix', '--skip-columns=guid', '--precise', '--report-changed-only'];
+    if ($dryRun) {
+        $args[] = '--dry-run';
+    }
+    if (wp($args) !== 0) {
+        fail("Migration from $source failed; database may be partially converted. Restore a backup before retrying if necessary.");
+    }
+}
+if (!$dryRun && wp(['cache', 'flush']) !== 0) {
+    fail('URLs were migrated, but the object cache could not be flushed.');
+}
