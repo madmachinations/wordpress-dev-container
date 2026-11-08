@@ -76,6 +76,7 @@ run wp eval-file /app/seed.php
 original_theme="$(run wp option get stylesheet)"
 start_web
 run wp eval-file /app/assert-migration.php
+test "$(docker exec "$name-web" curl -s -o /dev/null -w '%{http_code}' -H 'Host: wordpress.test:8080' http://localhost/migration-fixture/)" = 200
 test "$(run wp option get stylesheet)" = "$original_theme"
 stop_web
 start_web

@@ -1,5 +1,8 @@
 <?php
 global $wpdb;
+global $wp_rewrite;
+$wp_rewrite->set_permalink_structure('/%postname%/');
+$wp_rewrite->flush_rules(false);
 update_option('migration_fixture', [
     'production' => 'https://www.example.com/a',
     'production_http' => 'http://www.example.com/b',
