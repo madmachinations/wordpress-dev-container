@@ -9,5 +9,5 @@ for script in scripts/*.php scripts/migrate templates/block/src/render.php tests
     php -l "$script"
 done
 php tests/domains.php
-docker compose -f compose.example.yaml config --quiet
+ACTIVE_THEME=my-theme docker compose -f compose.example.yaml config --quiet
 git diff --check

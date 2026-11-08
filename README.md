@@ -8,15 +8,13 @@ Published image: `ghcr.io/madmachinations/wordpress-dev-container:latest` (Linux
 
 1. Put the site's complete WordPress files in `./site`, including `wp-load.php`, `wp-admin`, `wp-includes`, and `wp-content`.
 2. Make `site/wp-config.php` read the environment variables as described below. The container never generates or modifies this file.
-3. Copy this Compose template into the site's project as `compose.yaml`, then set the domains and theme in `.env`.
+3. Copy this Compose template into the site's project as `compose.yaml`, then set the production/staging domains and theme in `.env`. OrbStack derives the local address automatically.
 
 ```yaml
-name: ${COMPOSE_PROJECT_NAME:-wordpress-dev}
+name: ${ACTIVE_THEME:?Set ACTIVE_THEME in .env}
 services:
   wordpress:
     image: ghcr.io/madmachinations/wordpress-dev-container:latest
-    ports:
-      - "127.0.0.1:${HTTP_PORT:-8080}:80"
     environment:
       DB_HOST: db
       DB_PORT: "3306"
@@ -25,8 +23,8 @@ services:
       DB_NAME: wordpress
       PRODUCTION_DOMAIN: ${PRODUCTION_DOMAIN:-https://www.example.com}
       STAGING_DOMAIN: ${STAGING_DOMAIN:-https://staging.example.com}
-      LOCAL_DOMAIN: ${LOCAL_DOMAIN:-http://wordpress.test:8080}
-      ACTIVE_THEME: ${ACTIVE_THEME:-my-theme}
+      LOCAL_DOMAIN: http://wordpress.${ACTIVE_THEME}.orb.local
+      ACTIVE_THEME: ${ACTIVE_THEME}
     volumes:
       - ./site:/app
     depends_on:
@@ -54,17 +52,14 @@ volumes:
 The same template is in [compose.example.yaml](compose.example.yaml). Example `.env`:
 
 ```dotenv
-COMPOSE_PROJECT_NAME=my-client-site
-HTTP_PORT=8080
 PRODUCTION_DOMAIN=https://www.example.com
 STAGING_DOMAIN=https://staging.example.com
-LOCAL_DOMAIN=http://wordpress.test:8080
 ACTIVE_THEME=my-theme
 DB_PASSWORD=local-wordpress-password
 DB_ROOT_PASSWORD=local-root-password
 ```
 
-Add `127.0.0.1 wordpress.test` to your host's hosts file (`/etc/hosts` on macOS/Linux), then start:
+Start with OrbStack running; no hosts-file changes or port configuration are needed:
 
 ```sh
 docker compose pull
@@ -72,7 +67,7 @@ docker compose up -d
 docker compose logs -f wordpress
 ```
 
-Visit [http://wordpress.test:8080](http://wordpress.test:8080). For an empty database, complete the WordPress installer or import the site's SQL dump:
+With `ACTIVE_THEME=my-theme`, visit [http://wordpress.my-theme.orb.local](http://wordpress.my-theme.orb.local). For an empty database, complete the WordPress installer or import the site's SQL dump:
 
 ```sh
 docker compose exec -T wordpress wp db import - < site-backup.sql
@@ -88,7 +83,7 @@ docker compose down             # Remove containers/network; preserve database v
 docker compose down -v          # Also DELETE the database volume
 ```
 
-Use a unique `COMPOSE_PROJECT_NAME`, local hostname, and `HTTP_PORT` for each concurrent project; update `LOCAL_DOMAIN` to match. The database has no published host port. This image is intended for local development.
+The Compose project name is the theme name, and OrbStack exposes the `wordpress` service at `http://wordpress.<theme-name>.orb.local`. Each site uses a unique theme name, so multiple sites can run together without port conflicts. Leave the Compose project name unchanged (do not override it with `-p` or `COMPOSE_PROJECT_NAME`) so it matches the derived domain. Neither service publishes host ports. This template targets local development with OrbStack.
 
 ## Configuration
 
@@ -101,10 +96,10 @@ Use a unique `COMPOSE_PROJECT_NAME`, local hostname, and `HTTP_PORT` for each co
 | `DB_NAME` | Database name |
 | `PRODUCTION_DOMAIN` | Production origin, e.g. `https://www.example.com` |
 | `STAGING_DOMAIN` | Staging/sandbox origin, e.g. `https://staging.example.com` |
-| `LOCAL_DOMAIN` | Local origin, e.g. `http://wordpress.test:8080` |
-| `ACTIVE_THEME` | Theme directory slug, e.g. `my-theme`; used only by block helpers |
+| `LOCAL_DOMAIN` | Automatically supplied by Compose as `http://wordpress.${ACTIVE_THEME}.orb.local`; no `.env` entry needed |
+| `ACTIVE_THEME` | Theme directory slug, e.g. `my-theme`; also sets the Compose project name and OrbStack domain |
 
-All variables except `DB_PORT` are required at Apache startup. Domains accept HTTP(S) origins with optional ports and a trailing slash, but no path, credentials, query, or fragment. Bare production/staging hostnames default to HTTPS; bare local hostnames default to HTTP. Each environment must have a distinct host/port combination. TLS is not provided inside the container; use an external local reverse proxy for HTTPS locally. Before migration, helpers check that the database settings loaded from `wp-config.php` match the environment.
+All variables except `DB_PORT` are required by the container at Apache startup; Compose supplies `LOCAL_DOMAIN` automatically. Set `ACTIVE_THEME` to a lowercase theme directory slug suitable for a Compose project name and hostname, such as `my-theme`. Domains accept HTTP(S) origins with optional ports and a trailing slash, but no path, credentials, query, or fragment. Bare production/staging hostnames default to HTTPS; bare local hostnames default to HTTP. Each environment must have a distinct host/port combination. TLS is not provided inside the container; use an external local reverse proxy for HTTPS locally. Before migration, helpers check that the database settings loaded from `wp-config.php` match the environment.
 
 Adapt the site's existing `wp-config.php`, preserving its custom settings. A minimal example:
 
@@ -238,17 +233,17 @@ The integration suite creates disposable WordPress and MariaDB fixtures and chec
 
 Two independent GitHub Actions workflows:
 
-- **Pull request validation:** PRs targeting `main`; builds AMD64 and ARM64 without login or push, then runs integration tests on AMD64.
-- **Publish container:** pushes to `main` only; validates and tests AMD64 before publishing both architectures with `latest` and `sha-<full-commit-sha>` tags. Only this job has `packages: write`; authentication uses `GITHUB_TOKEN`.
+- **Pull request validation:** PRs targeting `main`; builds AMD64 and ARM64 without login or push.
+- **Publish container:** pushes to `main` only; builds and publishes both architectures as `latest`. Only this job has `packages: write`; authentication uses `GITHUB_TOKEN`.
 
 After the first publish, check package settings and make the GHCR package public for anonymous pulls. Private packages require `docker login ghcr.io` with an authorized token. If an existing package rejects publishing, check its linked repository and Actions access. Source metadata links the image to this repository.
 
-`latest` advances on successful `main` builds. Use a commit tag or image digest for a fixed downstream version. PHP and MariaDB minor-series tags receive upstream fixes on rebuild/pull; Node, WP-CLI, and block dependencies are pinned here and should be updated deliberately.
+`latest` advances on successful `main` builds. Use an image digest for a fixed downstream version. PHP and MariaDB minor-series tags receive upstream fixes on rebuild/pull; Node, WP-CLI, and block dependencies are pinned here and should be updated deliberately. The test scripts above are available to run manually; the workflows only build and publish.
 
 ## Troubleshooting
 
 - **Startup exits:** inspect `docker compose logs wordpress`; check the mount, `wp-config.php`, required variables, and table prefix. Repair or replace a partial/non-WordPress database before startup.
 - **Database timeout:** inspect `docker compose logs db`; existing MariaDB volumes retain original users/passwords even when `.env` changes. Update database credentials or deliberately recreate the disposable volume.
-- **Wrong redirects:** rerun `/migrate-to-local`, check `WP_HOME`/`WP_SITEURL`, `.htaccess`, caches, and plugin redirects. The hosts entry and local URL port must match Compose.
+- **Wrong redirects:** rerun `/migrate-to-local`, check `WP_HOME`/`WP_SITEURL`, `.htaccess`, caches, and plugin redirects. Use `http://wordpress.<theme-name>.orb.local` with OrbStack running, and keep the Compose project name equal to `ACTIVE_THEME`.
 - **Write failures:** grant the relevant user access to the specific theme/uploads/cache directory. No global ownership rewrite happens on startup.
 - **No image yet:** the GHCR tag exists after publishing succeeds on `main`; use a local build meanwhile.
